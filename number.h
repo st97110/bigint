@@ -1,3 +1,5 @@
+#ifndef NUMBER_H
+#define NUMBER_H
 #include <iostream>
 #include <string>
 #include <vector>
@@ -14,13 +16,16 @@ class Number
 {
 public:
 	Number() {}
-	Number(std::string);
+	Number(string);
 	~Number() {}
 
 	int errorTyep = -1; //錯誤編號
-	void setInput(const std::string&); // 輸入數學式
+	void setInput(const string&); // 輸入數學式
 	void inToPostfix(char*, char*); // 中序轉後序
 	void computInput(); // 運算後序式  判斷要呼叫整數還是小數做運算
-	
+
 	string input; // 存輸入字串(無空格 '#'代表負號)
 };
+#include "Integer.h"
+#include "Decimal.h"
+#endif // !NUMBER_H
