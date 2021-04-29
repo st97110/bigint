@@ -17,7 +17,6 @@ public:
 	Number(std::string);
 	~Number() {}
 
-	string name; // 存變數名稱
 	int errorTyep = -1; //錯誤編號
 	void setInput(const std::string&); // 輸入數學式
 	void inToPostfix(char*, char*); // 中序轉後序
