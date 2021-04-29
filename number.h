@@ -1,8 +1,7 @@
 #include <iostream>
-#include <sstream>
 #include <string>
 #include <vector>
-#include <iomanip> 
+#include <iomanip>
 #include <algorithm>
 using namespace std;
 
@@ -14,30 +13,15 @@ const int priority[] = { 0,1,2,3,4,5,6 };
 class Number
 {
 public:
-	Number();
+	Number() {}
 	Number(std::string);
-	~Number();
+	~Number() {}
 
-	std::string name;//存變數名稱
-	int errorTyep = -1;//錯誤編號
-	void setInput(const std::string&);//輸入數學式	
-	void computInput();//運算					
-	std::string printAns();//輸出答案(含防呆)	
-	std::string getInt();
-	std::string getDec();
-
-	virtual void assign();
-	virtual void print(std::ostream&)const;
-
-	friend std::ostream& operator<<(std::ostream& outputStream, const Number&); //輸出	
-	friend std::istream& operator>> (std::istream& inputStream, Number&); //輸入			
-
-	//整數↓
-	std::string getRoot120(std::string);//取得一整數開根號至小數點後150位		
-	std::string printRoot(std::string);//開根號輸出小數點後100位				
+	string name; // 存變數名稱
+	int errorTyep = -1; //錯誤編號
+	void setInput(const std::string&); // 輸入數學式
+	void inToPostfix(char*, char*); // 中序轉後序
+	void computInput(); // 運算後序式  判斷要呼叫整數還是小數做運算
 	
-	int cmp(std::string, std::string);//大數比較		
-protected:
-	std::string input;
-	//存輸入字串(無空格 '#'代表負號)
+	string input; // 存輸入字串(無空格 '#'代表負號)
 };
