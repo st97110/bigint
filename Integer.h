@@ -1,5 +1,4 @@
-#ifndef INTEGER_H
-#define INTEGER_H
+#pragma once
 #include "Number.h"
 class Decimal;
 class Integer : public Number
@@ -9,33 +8,31 @@ public:
 	Integer(string);
 	~Integer();
 
-	Integer& operator=(Integer&); // A = 48763000 B = A
+	void assign();
+	//Integer& operator=(Integer&); // A = 48763000 B = A
 	Integer& operator=(string&); // A = 487630000
 
-	// A = 3 
-	// PI = 3.14
 	friend Integer operator+(Integer&, Integer&); // A + B
-	friend Integer operator-(Integer&, Integer&); // A - B
-	friend Integer operator*(Integer&, Integer&); // A * B
-	friend Integer operator/(Integer&, Integer&); // A / B
-	
-	friend Integer operator+(Integer&, string& right); // A + 3
-	friend Integer operator-(Integer&, string& right); // A - 3
-	friend Integer operator*(Integer&, string& right); // A * 3
-	friend Integer operator/(Integer&, string& right); // A / 3
+	//friend Integer operator-(Integer&, Integer&); // A - B
+	//friend Integer operator*(Integer&, Integer&); // A * B
+	//friend Integer operator/(Integer&, Integer&); // A / B
+	//
+	//friend Integer operator+(Integer&, string& right); // A + 3
+	//friend Integer operator-(Integer&, string& right); // A - 3
+	//friend Integer operator*(Integer&, string& right); // A * 3
+	//friend Integer operator/(Integer&, string& right); // A / 3
 
-	friend Integer operator+(string& right, Integer&); // 3 + A
-	friend Integer operator-(string& right, Integer&); // 3 - A
-	friend Integer operator*(string& right, Integer&); // 3 * A
-	friend Integer operator/(string& right, Integer&); // 3 / A		
+	//friend Integer operator+(string& right, Integer&); // 3 + A
+	//friend Integer operator-(string& right, Integer&); // 3 - A
+	//friend Integer operator*(string& right, Integer&); // 3 * A
+	//friend Integer operator/(string& right, Integer&); // 3 / A		
 
-	friend Integer Power(Integer& left, Integer& right); // A ^ B
-	friend Integer Power(Integer& left, string& right); // A ^ 3
-	friend Integer Power(Integer& left, string& right); // 3 ^ A
+	//friend Integer Power(Integer& left, Integer& right); // A ^ B
+	//friend Integer Power(Integer& left, string& right); // A ^ 3
+	//friend Integer Power(Integer& left, string& right); // 3 ^ A
 
-	friend Integer Factorial(Integer& a); // A!
-	friend Integer Factorial(string& a); // 5!  3.14! 小數階乘報錯
+	//friend Integer Factorial(Integer& a); // A!
+	//friend Integer Factorial(string& a); // 5!  3.14! 小數階乘報錯
 
 	string ans; // 答案
 };
-#endif // !INTEGER_H
