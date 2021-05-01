@@ -31,18 +31,35 @@ void Number::setInput(const string& line)
 		if (temp[i] == '+' || temp[i] == '-')
 		{
 			sign = 0;
-			negative = false;
 			for (int j = i; j < temp.length(); j++)
 			{
+				negative = false;
 				if (temp[j] >= '0' && temp[j] <= '9' || temp[j] == '(')
 				{
 					if (i && sign % 2 == 0) // even 加號
 					{
 						input += '+';
 					}
-					else if (i && sign % 2 == 1 && temp[i - 1] >= '0' && temp[i - 1] <= '9') // odd 減號
+					else if (i && sign % 2 == 1) // odd 減號
 					{
-						input += '-';
+						for (int k = i - 1; k >= 0; k--)
+						{
+							if (!(temp[k] >= '0' && temp[k] <= '9' && temp[k] == ')'))
+							{
+								negative = true;
+								break;
+							}
+						}
+						if(!negative)
+						{
+							input += '-';
+						}
+						else
+						{
+							input += '#'; // 負號
+						}
+						i = j - 1; // 移動到下一位數字
+						break;
 					}
 					else
 					{
