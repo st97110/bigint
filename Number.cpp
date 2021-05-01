@@ -11,10 +11,16 @@ Number::Number()
 Number::Number(string _input)
 {
 	setInput(_input);
+	inToPostfix();
 	computInput();
 }
 Number::~Number() 
 {
+}
+
+string Number::getInt()
+{
+	return ans.num;
 }
 
 //輸入任意數學式
@@ -81,10 +87,9 @@ void Number::setInput(const string& line)
 	}
 }
 
-//判斷字串、轉換後序式
-void Number::computInput()
+void Number::inToPostfix()
 {
-	vector<string> _operator, postfix;//stack堆疊  _operator(堆疊中的運算子)  postfix(後序式)
+	vector<string> _operator;//stack堆疊  _operator(堆疊中的運算子)
 	vector<int> operatorPriority;//存堆疊中運算子的優先順序
 	int nowPriority;//存當前運算子優先順序
 	for (int i = 0; i < input.size(); i++)
@@ -108,13 +113,13 @@ void Number::computInput()
 			i = j - 1;
 			postfix.push_back(temp);
 		}
-		//遇右括號')'輸出stack中的operator至')'
+		//遇右括號')'
 		else if (input[i] == ')')
 		{
 			while (!_operator.empty())
 			{
 				int top = _operator.size() - 1;
-				if (_operator[top] == "(") {
+				if (_operator[top] == "(") { // 輸出stack中的operator直到遇到左括號'('
 					_operator.pop_back();
 					operatorPriority.pop_back();
 					break;
@@ -128,13 +133,10 @@ void Number::computInput()
 		else {
 			switch (input[i])
 			{
-			case'(':	//左括號優先度：6
-				nowPriority = priority[6];
-				break;
-			case'#':	//負號號優先度：5
+			case'(':	//左括號優先度：5
 				nowPriority = priority[5];
 				break;
-			case'i':	//虛部優先度：4
+			case'#':	//負號號優先度：4
 				nowPriority = priority[4];
 				break;
 			case'!':	//階成優先度：3
@@ -161,30 +163,169 @@ void Number::computInput()
 			// 若最上方為 ^ 次方，必須大於 不能等於當前運算子  → 輸出至postfix(後序式)
 			if (!operatorPriority.empty())
 			{
-				while (operatorPriority[operatorPriority.size() - 1] != 6 && ((input[i] != '^' && operatorPriority[operatorPriority.size() - 1] >= nowPriority) || (input[i] == '^' && operatorPriority[operatorPriority.size() - 1] > nowPriority)))
+				int top = _operator.size() - 1;
+				while (operatorPriority[top] != 5 && ((input[i] != '^' && operatorPriority[top] >= nowPriority) || (input[i] == '^' && operatorPriority[top] > nowPriority)))
 				{
-					postfix.push_back(_operator[_operator.size() - 1]);
+					postfix.push_back(_operator[top]);
 					_operator.pop_back();
 					operatorPriority.pop_back();
+					top = _operator.size() - 1;
+
 					if (operatorPriority.empty())
 						break;
 				}
 			}
-			string operat;//堆疊operator
-			operat = input[i];//char 轉存 string
-			_operator.push_back(operat);//堆疊當前運算子至_operator
-			operatorPriority.push_back(nowPriority);//堆疊運算子優先度至operatorPriority
+			string operat; // 堆疊operator
+			operat = input[i]; //char 轉存 string
+			_operator.push_back(operat); // 堆疊當前運算子至_operator
+			operatorPriority.push_back(nowPriority); // 堆疊運算子優先度至operatorPriority
 		}
 	}
+	// 把剩下的全部都輸出出來
 	while (!(_operator.empty()))
 	{
 		postfix.push_back(_operator[_operator.size() - 1]);
 		_operator.pop_back();
 		operatorPriority.pop_back();
 	}
-	for (auto c : postfix)
+}
+//判斷字串、轉換後序式
+void Number::computInput()
+{
+	//運算後序式
+
+	vector<newString> stack;//stack[堆疊中的大數(分數型態)]
+	for (int i = 0; i < postfix.size(); i++)
 	{
-		cout << c << " ";
+		if ((postfix[i][0] < '0' || postfix[i][0] == '^') && !stack.empty())
+		{
+			if (postfix[i][0] == '#') //負號
+			{
+				changeSign(stack[stack.size() - 1]);
+			}
+			else if (postfix[i][0] == '!')
+			{
+				stack[stack.size() - 1] = fac(stack[stack.size() - 1]);
+			}
+			else if (stack.size() >= 2)
+			{
+				int top = stack.size() - 1;
+				switch (postfix[i][0])
+				{
+				case'+':
+					stack[top - 1] = add(stack[top - 1], stack[top]);
+					stack.pop_back();
+					break;
+				case'-':
+					stack[top - 1] = sub(stack[top - 1], stack[top]);
+					stack.pop_back();
+					break;
+				case'*':
+					stack[top - 1] = mul(stack[top - 1], stack[top]);
+					stack.pop_back();
+					break;
+				case'/':
+					stack[top - 1] = div(stack[top - 1], stack[top]);
+					stack.pop_back();
+					break;
+				case'^':
+					stack[top - 1] = pow(stack[top - 1], stack[top]);
+					stack.pop_back();
+					break;
+				default:
+					break;
+				}
+			}
+		}
+		else
+		{
+			stack.push_back(checkDecimal(postfix[i]));
+		}
+		if (i == postfix.size() - 1)
+			ans = stack[0];
 	}
-	cout << endl;
+}
+
+void Number::changeSign(newString& f) // 變號
+{
+	if (f.num != "0")
+		f.sign = !f.sign;
+}
+
+newString Number::checkDecimal(string pos) // 轉型態
+{
+	newString f;
+	f.num = pos;
+	//判斷是否為小數
+	int index = 0;
+	for (int i = 0; i < pos.size() - 1; i++)
+	{
+		if (pos[i] == '.')
+		{
+			f.decimal = true;
+			index = i;
+			break;
+		}
+	}
+	if (pos[0] == '-')
+	{
+		f.sign = false;
+	}
+	return f;
+}
+
+newString Number::add(newString left, newString right) // 大數加法
+{
+	newString f;
+	if (left.decimal || right.decimal) // 判斷是否為小數運算
+	{
+		f.numerator = fracAdd(left,right);
+	}
+	else
+	{
+
+	}
+	return f;
+}
+
+newString Number::sub(newString, newString) // 大數減法
+{
+	newString f;
+	return f;
+}
+
+newString Number::mul(newString, newString) // 大數乘法
+{
+	newString f;
+	return f;
+}
+
+newString Number::div(newString, newString) // 大數除法
+{
+	newString f;
+	return f;
+}
+
+newString Number::fac(newString) // 大數階乘
+{
+	newString f;
+	return f;
+}
+
+newString Number::pow(newString, newString) // 大數次方
+{
+	newString f;
+	return f;
+}
+
+newString Number::root(newString, newString) // 大數開根號
+{
+	newString f;
+	return f;
+}
+
+string Number::fracAdd(newString left, newString right) // 小數加法
+{
+	string fracAns;
+	return fracAns;
 }
