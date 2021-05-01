@@ -1,5 +1,4 @@
-#ifndef DECIMAL_H
-#define DECIMAL_H
+#pragma once
 #include "Number.h"
 class Integer;
 class Decimal : public Number
@@ -47,4 +46,3 @@ public:
 
 	string ans;
 };
-#endif // !DECIMAL_H
