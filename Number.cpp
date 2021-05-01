@@ -87,6 +87,7 @@ void Number::setInput(const string& line)
 	}
 }
 
+//轉換成後序式
 void Number::inToPostfix()
 {
 	vector<string> _operator;//stack堆疊  _operator(堆疊中的運算子)
