@@ -6,15 +6,21 @@ Integer::Integer() : Number()
 {
 	ans = "0";
 }
-Integer::Integer(string input):Number(input)
+Integer::Integer(const char* input) : Number(input)
 {
 	ans = getInt();
 }
 Integer::~Integer() {}
 
-void Integer::assign()
+void Integer::assign() // 繼承number
 {
 	ans = getInt();
+}
+
+void Integer::print(ostream& out) const // 繼承number
+{
+	string ret = ans;
+	out << ret;
 }
 
 Integer& Integer::operator=(string& r)
