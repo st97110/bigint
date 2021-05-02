@@ -5,10 +5,11 @@ class Integer : public Number
 {
 public:
 	Integer();
-	Integer(string);
+	Integer(const char*);
 	~Integer();
 
-	void assign();
+	virtual void assign(); // 繼承
+	virtual void print(ostream&)const; // 繼承
 	//Integer& operator=(Integer&); // A = 48763000 B = A
 	Integer& operator=(string&); // A = 487630000
 
