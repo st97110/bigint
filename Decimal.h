@@ -8,6 +8,9 @@ public:
 	Decimal(string);
 	~Decimal();
 
+	virtual void assign(); // 繼承
+	virtual void print(ostream&)const; // 繼承
+
 	Decimal& operator=(Decimal&);
 	Decimal& operator=(string&);
 
