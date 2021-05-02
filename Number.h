@@ -4,6 +4,7 @@
 #include <vector>
 #include <iomanip>
 #include <algorithm>
+#include <cmath>
 using namespace std;
 
 const int priority[] = { 0,1,2,3,4,5 };
@@ -14,12 +15,11 @@ const int priority[] = { 0,1,2,3,4,5 };
 
 struct newString
 {
-	bool sign = true; // 預設為正數
+	bool sign = true; // 預設為true 是正數
 	bool decimal = false; // 預設為不是小數
 
-	string num; // 把struct當string用，還可以把負號拿掉
-	string numerator = "0";	// 分子
-	string denominator = "0"; // 分母
+	string numerator = "1";	// 分子 沒有正負號
+	string denominator = "1"; // 分母
 };
 
 class Number
@@ -32,13 +32,24 @@ public:
 	string input; // 存輸入字串(無空格 '#'代表負號)
 	vector<string> postfix; // 存後序式
 	int errorTyep = -1; //錯誤編號
-	newString ans;
-	string getInt();
+	newString ans; // 最終答案
+	
+
+	virtual void assign();
+	virtual void print(std::ostream&)const;
+
+	friend std::ostream& operator<<(std::ostream& outputStream, const Number&); //輸出
+	friend std::istream& operator>> (std::istream& inputStream, Number&); //輸入
 
 	void setInput(const string&); // 輸入數學式
 	void inToPostfix(); // 中序轉後序
 	void computInput(); // 運算後序式  判斷要呼叫整數還是小數做運算
 	newString checkDecimal(string); // 把string轉成新型態
+	string getInt();
+	string getDec();
+	string get110Dec(newString);
+	string get100Dec(newString);
+	string printAns();//輸出答案(含防呆)	
 
 	void changeSign(newString&); // 加負號
 	newString add(newString, newString); // 大數加法
@@ -47,9 +58,23 @@ public:
 	newString div(newString, newString); // 大數除法	
 	newString fac(newString); // 大數階乘	
 	newString pow(newString, newString); // 大數次方
-	newString root(newString, newString); // 大數開根號
 
-	string fracAdd(newString, newString); //分數加法
+	string intAdd(string, string); // 整數加法	
+	string intSub(string, string); // 整數減法
+	string intMul(string, string); // 整數乘法
+	string intDiv(string, string); // 整數除法
+	string intPow(string, string); // 整數次方
+	int intCmp(string, string); //整數比較
+
+	string fracAdd(newString, newString); // 分數加法
+	string fracSub(newString, newString); // 分數減法
+	string fracMul(string, string); // 分數乘法
+
+
+	newString fracRoot(newString, bool); // 開根號
+	newString about(newString); // 約分
+	string gcd(string, string); // 取最大公因數	
+	string mod(string, string); // 取餘數
 };
 #include "Integer.h"
 #include "Decimal.h"
