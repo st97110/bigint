@@ -1,6 +1,6 @@
 //
 //
-// 一定要先在main裡Goodlooks::printIndex()再用顏色函式
+// 一定要先在main裡Goodlooks::printIndex()再用顏色函式 
 //
 //
 #include "Goodlooks.h"
