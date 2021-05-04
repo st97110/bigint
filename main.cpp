@@ -1,13 +1,11 @@
 #include "Number.h"
 int main()
 {
-	Integer A;
-	Decimal B;
-	Integer C;
-	cin >> A >> B >> C;
-	Integer D = C * B;
-	//D = C * B;       /////////////////////////// 錯誤
-	cout << D << endl;
+	Decimal A = "3";
+	Integer B = "-3";
+	Decimal C = A + B;
+	C = A + B;    /////////////////////////// 錯誤  
+	cout << C << endl;
 
 	cout << "0.";
 	for (int i = 0; i < 100; i++)
