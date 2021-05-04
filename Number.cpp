@@ -22,10 +22,13 @@ Number::~Number()
 void Number::setInput(const string& line)
 {
 	input.clear();
-	string temp = line;
+	istringstream ss(line);
+	string in, temp;
 	int sign;
 	bool negative;
-	
+	//消除空格
+	while (ss >> in)
+		temp += in;
 	//將負號轉成'#'
 	for (int i = 0; i < temp.size(); i++)
 	{
@@ -34,26 +37,17 @@ void Number::setInput(const string& line)
 			sign = 0;
 			for (int j = i; j < temp.length(); j++)
 			{
-				negative = false;
 				if (temp[j] >= '0' && temp[j] <= '9' || temp[j] == '(')
 				{
-					if (i && sign % 2 == 0) // even 加號
+					if (i && (temp[i - 1] >= '0' && temp[i - 1] <= '9' || temp[i - 1] == ')'))
 					{
-						input += '+';
-					}
-					else if (i && sign % 2 == 1) // odd 減號
-					{
-						for (int k = i - 1; k >= 0; k--)
+						if (sign % 2 == 0) // even 加號
 						{
-							if (!(temp[k] >= '0' && temp[k] <= '9' || temp[k] == ')'))
-							{
-								negative = true;
-								break;
-							}
+							input += '+';
 						}
-						if(!negative)
+						else if (sign % 2 == 1) // odd 減號
 						{
-							input += '-';
+							input += '-'; // 減號
 						}
 						else
 						{
@@ -62,7 +56,7 @@ void Number::setInput(const string& line)
 						i = j - 1; // 移動到下一位數字
 						break;
 					}
-					else
+					else if (sign % 2 == 1)
 					{
 						input += '#'; // 負號
 					}
@@ -274,7 +268,7 @@ newString Number::checkDecimal(string pos) // 轉型態
 		{
 			if (pos[i] != '0' && pos[i] != '-')
 			{
-				index = i;
+				index = i; // 第一個非0的數 EX 000123
 				zero = false;
 				break;
 			}
@@ -285,7 +279,10 @@ newString Number::checkDecimal(string pos) // 轉型態
 			f.denominator = "1";
 		}
 		else
-			f.numerator = "0"; 
+		{
+			f.numerator = "0";
+			f.denominator = "1";
+		}
 	}
 	else // 是小數 要變分數 2.4 =   24       12
 	//                           ----- =  -----
@@ -302,24 +299,24 @@ newString Number::checkDecimal(string pos) // 轉型態
 		}
 		if (!zero)
 		{
-			int num;  ////////////// 會溢位
-			num = std::pow(10, pos.size() - index); // 0.05 = 5/100
+			string num = "1";  ////////////// 會溢位
+			num.append(pos.size() - index,'0'); // 0.05 = 5/"100"
 
 			for (int i = 0; i < pos.size(); i++)
 			{
 				if (pos[i] != '0' && pos[i] != '-')
 				{
-					index = i;
+					index = i; // 第一個非0的數 EX 0.00"1"23
 					break;
 				}
 			}
-			
-			f.numerator.assign(pos,index);
-			f.denominator = to_string(num);
+			f.numerator.assign(pos,index); // 0.00123 ==> 123
+			f.denominator = num;           //            100000
 		}
 		else
 		{
 			f.numerator = "0";
+			f.denominator = "1";
 		}
 	}
 	if (f.denominator != "1")
@@ -332,10 +329,15 @@ newString Number::add(newString left, newString right) // 大數加法
 	newString f;
 	if (left.decimal || right.decimal) // 判斷是否為小數運算
 	{
-		f.numerator = fracAdd(left,right);
+		f = fracAdd(left,right);
+		f.decimal = true;
 	}
 	else
 	{
+		if(!left.sign)
+			left.numerator.insert(left.numerator.begin(), '-');
+		if (!right.sign)
+			right.numerator.insert(right.numerator.begin(), '-');
 		f.numerator = intAdd(left.numerator, right.numerator);
 	}
 	return f;
@@ -346,10 +348,15 @@ newString Number::sub(newString left, newString right) // 大數減法
 	newString f;
 	if (left.decimal || right.decimal) // 判斷是否為小數運算
 	{
-		f.numerator = fracSub(left, right);
+		f = fracSub(left, right);
+		f.decimal = true;
 	}
 	else
 	{
+		if (!left.sign)
+			left.numerator.insert(left.numerator.begin(), '-');
+		if (!right.sign)
+			right.numerator.insert(right.numerator.begin(), '-');
 		f.numerator = intSub(left.numerator,right.numerator);
 	}
 	return f;
@@ -358,15 +365,16 @@ newString Number::sub(newString left, newString right) // 大數減法
 newString Number::mul(newString left, newString right) // 大數乘法
 {
 	newString f;
-	if (left.sign && right.sign)
-		f.sign = false;
-	else if (left.sign || right.sign)
+	if (!left.sign && !right.sign)
 		f.sign = true;
-	else f.sign = false;
+	else if (!left.sign || !right.sign)
+		f.sign = false;
+	else f.sign = true;
 	if (left.decimal || right.decimal) // 判斷是否為小數運算
 	{
-		f.numerator = fracMul(left.numerator, right.numerator);
-		f.denominator = fracMul(left.denominator, right.denominator);
+		f = fracMul(left, right);
+		f = fracMul(left, right);
+		f.decimal = true;
 	}
 	else // 整數乘法
 	{
@@ -378,13 +386,37 @@ newString Number::mul(newString left, newString right) // 大數乘法
 
 newString Number::div(newString left, newString right) // 大數除法
 {
+	if (right.numerator == "0")
+	{
+		errorTyep = 3; // 除數不可是0
+		return left;
+	}
 	newString f;
+	f.decimal = true;
+	if (!left.sign && !right.sign)
+		f.sign = true;
+	else if (!left.sign || !right.sign)
+		f.sign = false;
+	else f.sign = true;
+
+	// 內相乘為分母 外相乘為分子
+	f.numerator = intMul(left.numerator, right.denominator);
+	f.denominator = intMul(left.denominator, right.numerator);
+
+	if (!left.decimal && !right.decimal) // 1/3 = 0.33333 要變 0, 9/2 = 4.5 ==> 4 
+	{
+		f.numerator = intDiv(f.numerator,f.denominator);
+		f.denominator = "1";
+		f.decimal = false;
+	}
+	if (f.denominator != "0")
+		f = about(f);//約分
 	return f;
 }
 
 newString Number::fac(newString f) // 大數階乘
 {
-	if (f.decimal == true || f.sign == false) // 判斷是否為小數
+	if (f.sign == false || f.denominator != "1") // 判斷是否為小數
 	{
 		errorTyep = 1; // 非0!或正整數階乘
 	}
@@ -441,14 +473,17 @@ newString Number::fac(newString f) // 大數階乘
 
 newString Number::pow(newString left, newString right) // 大數次方
 {
-	if ((right.denominator != "1" && right.denominator != "0") && !(right.numerator == "1" && right.denominator == "2"))
+	if (right.denominator != "1" && !(right.numerator == "1" && right.denominator == "2")) // 不是整數也不是 0.5 次方 
 	{
 		if (errorTyep == -1)
 			errorTyep = 2;
 		return left;
 	}
 	if (right.numerator == "1" && right.denominator == "2") // 3^0.5
+	{
+		left.decimal = true;
 		return fracRoot(left, right.sign);
+	}
 	else if (right.numerator == "0") // 3^0 = 1
 	{
 		left.numerator = left.denominator = "1";
@@ -467,22 +502,29 @@ newString Number::pow(newString left, newString right) // 大數次方
 
 string Number::intAdd(string left, string right) // 整數加法
 {
+	bool sign = true; // true 為正數
 	string temp, ans;
 	int size1 = left.size(), size2 = right.size();
 	if (left[0] != '-' && right[0] == '-') // A + -B
 	{
-		right.erase(0, 0); // -B -> B
+		right.erase(0, 1); // -B -> B
 		ans = intSub(left, right); // A - B
 		return ans;
 	}
 	else if (left[0] == '-' && right[0] != '-') // -A + B
 	{
-		left.erase(0, 0); // -A -> A
+		left.erase(0, 1); // -A -> A
 		ans = intSub(right, left); // B - A
 		return ans;
 	}
 	else
 	{
+		if (left[0] == '-' && right[0] == '-') // -A + -B
+		{
+			sign = false;
+			left.erase(0, 1); // 把負號清掉
+			right.erase(0, 1);
+		}
 		if (size1 >= size2)
 		{
 			ans = left;
@@ -511,7 +553,7 @@ string Number::intAdd(string left, string right) // 整數加法
 				ans.insert(ans.begin(), '1');
 		}
 	}
-	if (ans[0] == '-')
+	if (!sign)
 		return "-" + ans;
 	else
 		return ans;
@@ -525,20 +567,20 @@ string Number::intSub(string left, string right) // 整數減法
 
 	if (left[0] != '-' && right[0] == '-')// A - -B = A + B
 	{
-		right.erase(0, 0); // -B -> B
+		right.erase(0, 1); // -B -> B
 		ans = intAdd(left, right);
 		return ans;
 	}
 	else if (left[0] == '-' && right[0] != '-')// -A - B = -A + -B
 	{
-		left.erase(0, 0); // -A -> A
+		right.insert(right.begin(), '-'); // B -> -B
 		ans = intAdd(left, right);
 		return ans;
 	}
-	else if (left[0] == '-' && right[0] == '-')//-A - -B= -A + B = B-A
+	else if (left[0] == '-' && right[0] == '-')//-A - -B= -A + B = B - A
 	{
-		left.erase(0, 0); // -A -> A
-		right.erase(0, 0); // -B -> B
+		left.erase(0, 1); // -A -> A
+		right.erase(0, 1); // -B -> B
 		ans = intSub(right, left);
 		return ans;
 	}
@@ -797,29 +839,262 @@ int Number::intCmp(string left, string right)
 	}
 }
 
-string Number::fracAdd(newString left, newString right) // 小數加法
+newString Number::fracAdd(newString left, newString right) // 小數加法
 {
-	string fracAns;
-	return fracAns;
+	newString f;
+	f.decimal = true;
+
+	int c = intCmp(left.denominator, right.denominator);
+	if (c == 0) //若分母相同，分子直接相加
+	{
+		if (!left.sign) //還原負號
+			left.numerator.insert(0, "-");
+		if (!right.sign)
+			right.numerator.insert(0, "-");
+
+		f.numerator = intAdd(left.numerator, right.numerator);
+		f.denominator = left.denominator;
+	}
+	else if (left.numerator == "0") // 一邊分子為0就不用加了
+	{
+		return right;
+	}
+	else if (right.numerator == "0") // 一邊分子為0就不用加了
+	{
+		return left;
+	}
+	else//若分母不相同，通分後相加
+	{
+		f.denominator = intMul(left.denominator, right.denominator);
+		left.numerator = intMul(left.numerator, right.denominator);
+		right.numerator = intMul(right.numerator, left.denominator);
+
+		if (!left.sign) //還原負號
+			left.numerator.insert(0, "-");
+		if (!right.sign)
+			right.numerator.insert(0, "-");
+		f.numerator = intAdd(left.numerator, right.numerator);
+	}
+	f.sign = sign(f.numerator); // 確認正負號後 把正負號清除
+	if (f.denominator != "0")
+		f = about(f);//約分
+	return f;
 }
 
-string Number::fracSub(newString left, newString right) // 小數減法
+newString Number::fracSub(newString left, newString right) // 小數減法
 {
-	string fracAns;
-	return fracAns;
+	newString f;
+	f.decimal = true;
+	
+	int c = intCmp(left.denominator, right.denominator);
+	if (c == 0) //若分母相同，分子直接相減
+	{
+		if (!left.sign) //還原負號
+			left.numerator.insert(0, "-");
+		if (!right.sign)
+			right.numerator.insert(0, "-");
+
+		f.numerator = intSub(left.numerator, right.numerator);
+		f.denominator = left.denominator;
+	}
+	else if (left.numerator == "0") // 一邊分子為0就不用加了
+	{
+		right.sign = !right.sign; // 確認正負號後 把正負號清除
+		return right;
+	}
+	else if (right.numerator == "0") // 一邊分子為0就不用加了
+	{
+		left.sign = !left.sign; // 確認正負號後 把正負號清除
+		return left;
+	}
+	else//若分母不相同，通分後相加
+	{
+		f.denominator = intMul(left.denominator, right.denominator);
+		left.numerator = intMul(left.numerator, right.denominator);
+		right.numerator = intMul(right.numerator, left.denominator);
+
+		if (!left.sign) //還原負號
+			left.numerator.insert(0, "-");
+		if (!right.sign)
+			right.numerator.insert(0, "-");
+		f.numerator = intSub(left.numerator, right.numerator);
+	}
+	f.sign = sign(f.numerator); // 確認正負號後 把正負號清除
+	if (f.denominator != "0")
+		f = about(f);//約分
+	return f;
 }
 
-string Number::fracMul(string left, string right) // 小數乘法
+newString Number::fracMul(newString left, newString right) // 小數乘法
 {
-	string fracAns;
-	return fracAns;
+	newString f;
+	f.decimal = true;
+	if (!left.sign && !right.sign) // 負負得正
+		f.sign = true;
+	else if (!left.sign || !right.sign)
+		f.sign = false;
+	else f.sign = true;
+
+	f.numerator = intMul(left.numerator, right.numerator);
+	f.denominator = intMul(left.denominator, right.denominator);
+
+	if (f.numerator == "0" && f.denominator == "0")
+		f.sign = false;
+
+	if (f.denominator != "0")
+		f = about(f);//約分
+	return f;
 }
 
-
-
-newString Number::fracRoot(newString left, bool) // 開根號
+newString Number::fracRoot(newString left, bool sign) // 開根號
 {
+	if (!left.sign)
+	{
+		errorTyep = 4; // 負數不可開根號
+		return left;
+	}
+	string t1, t2, s;
+	t1 = getRoot120(left.numerator);
+	t2 = getRoot120(left.denominator);
+	s.insert(s.end(), 50, '0');
+	size_t f1, f2;
+	f1 = t1.find('.');
+	f2 = t2.find('.');
+	if (t1.substr(f1 + 1, 50) == s && t2.substr(f2 + 1, 50) == s)
+	{
+		left.numerator.assign(t1.begin(), t1.begin() + f1);
+		left.denominator.assign(t2.begin(), t2.begin() + f2);
+		if (!sign)
+		{
+			string temp = left.denominator;
+			left.denominator = left.numerator;
+			left.numerator = temp;
+		}
+		return left;
+	}
+	else
+	{
+		t1.erase(f1, 1);
+		t2.erase(f2, 1);
+		if (!sign) // 2 ^ -0.5 = 1/(2^0.5)
+			left.numerator = t2, left.denominator = t1;
+		else
+			left.numerator = t1, left.denominator = t2;
+	}
+	if (left.denominator != "0")
+		left = about(left);
 	return left;
+}
+
+string Number::getRoot120(string s)
+{
+	string ans;
+	int len1;
+	s.length() % 2 == 0 ? len1 = s.length() / 2 : len1 = s.length() / 2 + 1;
+	s.insert(s.end(), 300, '0');
+	int len = s.length();
+	int i, j;
+	int x[300] = {}, y[600] = {};
+	for (i = 0, j = len - 1; j >= 0; i++)
+	{
+		x[i] = s[j] - '0';
+		if (j - 1 >= 0)    x[i] = x[i] + (s[j - 1] - '0') * 10;
+		if (j - 2 >= 0)    x[i] = x[i] + (s[j - 2] - '0') * 100;
+		if (j - 3 >= 0)    x[i] = x[i] + (s[j - 3] - '0') * 1000;
+		j -= 4;
+	}
+	int xlen = len, ylen = 0, head = 0;
+	while (xlen >= 0 && x[xlen] == 0) xlen--;
+	for (j = (len - 1) / 8, i = j * 2; j >= 0; j--, i -= 2)
+	{
+		ylen++;
+		for (int p = ylen; p >= 1; p--)
+			y[p] = y[p - 1];
+		y[0] = 0;
+		if (xlen < j)
+		{
+			if (!head)
+				ans.push_back('0'), head = 1;
+			else
+				ans = ans + "0000";
+			continue;
+		}
+		int l = 0, r = 9999, p;
+		int z[300]; // z = (y*10 + p)*p;
+		while (l <= r)
+		{
+			p = (l + r) / 2;
+			y[0] += p;
+			z[0] = 0;
+			for (int q = 0; q <= ylen + 5; q++)
+			{
+				z[q] += p * y[q];
+				z[q + 1] = z[q] / 10000;
+				z[q] %= 10000;
+			}
+			int chflag = 0;
+			for (int q = ylen + 5; q >= 0; q--)
+			{
+				if (z[q] > x[i + q])
+				{
+					chflag = 1;
+					break;
+				}
+				else if (z[q] < x[i + q])
+				{
+					chflag = 0;
+					break;
+				}
+			}
+			y[0] -= p;
+			if (chflag)
+				r = p - 1;
+			else
+				l = p + 1;
+		}
+		p = l - 1;
+		y[0] = p;
+		z[0] = 0;
+		for (int q = 0; q <= ylen + 5; q++)
+		{
+			z[q] += p * y[q];
+			z[q + 1] = z[q] / 10000;
+			z[q] %= 10000;
+		}
+		for (int q = ylen + 5; q >= 0; q--)
+			x[i + q] -= z[q];
+		for (int q = 0; q <= ylen + 5; q++)
+		{
+			while (x[i + q] < 0)
+				x[i + q] += 10000, x[i + q + 1]--;
+		}
+		y[0] += p;
+		for (int q = 0; q <= ylen + 5; q++)
+		{
+			if (y[q] >= 10000)
+			{
+				y[q + 1] += y[q] / 10000;
+				y[q] %= 10000;
+			}
+		}
+		ylen += 5;
+		while (ylen >= 0 && y[ylen] == 0)    ylen--;
+		while (xlen >= 0 && x[xlen] == 0)    xlen--;
+		if (!head)
+		{
+			ans = ans + to_string(p);
+			head = 1;
+		}
+		else
+		{
+			string str = to_string(p);
+			for (int w = 0; w < 4 - str.length(); w++)
+				ans.push_back('0');
+			ans = ans + str;
+		}
+	}
+	ans.insert(len1, ".");
+	return ans;
 }
 
 newString Number::about(newString f)
@@ -855,6 +1130,18 @@ string Number::mod(string left, string right)
 	return intDiv(a, right);
 }
 
+//正負號判斷
+bool Number::sign(string& str)
+{
+	bool s = true;
+	if (str[0] == '-')
+	{
+		s = false;
+		str.erase(str.begin());
+	}
+	return s;
+}
+
 ostream& operator<<(ostream& outputStream, const Number& a)
 {
 	a.print(outputStream);
@@ -866,6 +1153,7 @@ istream& operator>>(istream& inputStream, Number& a)
 	string in;
 	inputStream >> in;
 	a.setInput(in);
+	a.inToPostfix();
 	a.computInput();
 	a.assign();
 	return inputStream;
@@ -891,6 +1179,12 @@ string Number::printAns()
 		case 3:
 			return "Error (3) : 除數不可為0";
 			break;
+		case 4:
+			return "Error (4) : 負數不可開根號";
+			break;
+		case 5:
+			return "Error (5) : 輸入有地方錯誤了";
+			break;
 		default:
 			break;
 		}
@@ -908,6 +1202,25 @@ string Number::printAns()
 		return getInt();
 }
 
+newString Number::getFrac()
+{
+	return ans;
+}
+
+newString Number::getReal()
+{
+	newString ret;
+	ret.sign = ans.sign;
+	ret.denominator = ans.denominator;
+	ret.numerator = ans.numerator;
+	return ret;
+}
+
+void Number::setFrac(newString& f)
+{
+	ans = f;
+}
+
 string Number::getInt()
 {
 	if (errorTyep > 0)
@@ -915,15 +1228,18 @@ string Number::getInt()
 	
 	string ret;
 	if(!ans.decimal)
+	{
 		ret = ans.numerator;
+	}
 	else
 	{
 		ret = get100Dec(ans);
-		if (!ans.sign)
-			ret.insert(ret.begin(), '-');
-		ret.assign(ret, 0, ret.size() - 100);
+
+		size_t index;
+		index = ret.find('.');
+		ret.assign(ret, 0, index);
 	}
-	if (!ans.sign)
+	if (!ans.sign && ret[0] != '-')
 		ret.insert(ret.begin(), '-');
 	if (ret == "-0")
 		return "0";
@@ -1017,5 +1333,5 @@ string Number::get100Dec(newString f)
 		temp += get110;
 		get110 = temp;
 	}
-	return get110.assign(get110, 0, get110.size() - 9);
+	return get110.assign(get110, 0, get110.size() - 10);
 }
